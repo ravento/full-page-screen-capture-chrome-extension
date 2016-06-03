@@ -23,12 +23,12 @@ function testURLMatches(url) {
     // wouldn't work -- so just testing against known urls
     // for now...
     var r, i;
-    for (i=noMatches.length-1; i>=0; i--) {
+    for (i = noMatches.length - 1; i >= 0; i--) {
         if (noMatches[i].test(url)) {
             return false;
         }
     }
-    for (i=matches.length-1; i>=0; i--) {
+    for (i = matches.length - 1; i >= 0; i--) {
         r = new RegExp('^' + matches[i].replace(/\*/g, '.*') + '$');
         if (r.test(url)) {
             return true;
@@ -55,14 +55,14 @@ var screenshots,
 function sendScrollMessage(tab) {
     contentURL = tab.url;
     screenshots = null;
-    chrome.tabs.sendMessage(tab.id, {msg: 'scrollPage'}, function() {
+    chrome.tabs.sendMessage(tab.id, { msg: 'scrollPage' }, function () {
         // We're done taking snapshots of all parts of the window. Display
         // the resulting full screenshot images in a new browser tab.
         openPage();
     });
 }
 
-chrome.runtime.onMessage.addListener(function(request, sender, callback) {
+chrome.runtime.onMessage.addListener(function (request, sender, callback) {
     if (request.msg === 'capturePage') {
         capturePage(request, sender, callback);
         return true;
@@ -76,11 +76,11 @@ function capturePage(data, sender, callback) {
     $('bar').style.width = parseInt(data.complete * 100, 10) + '%';
 
     chrome.tabs.captureVisibleTab(
-        null, {format: 'png', quality: 100}, function(dataURI) {
+        null, { format: 'png', quality: 100 }, function (dataURI) {
             if (dataURI) {
                 var image = new Image();
-                image.onload = function() {
-                    data.image = {width: image.width, height: image.height};
+                image.onload = function () {
+                    data.image = { width: image.width, height: image.height };
 
                     // given device mode emulation or zooming, we may end up with
                     // a different sized image than expected, so let's adjust to
@@ -106,7 +106,7 @@ function capturePage(data, sender, callback) {
                     // draw it on matching screenshot canvases
                     _filterScreenshots(
                         data.x, data.y, image.width, image.height, screenshots
-                    ).forEach(function(screenshot) {
+                    ).forEach(function (screenshot) {
                         screenshot.ctx.drawImage(
                             image,
                             data.x - screenshot.left,
@@ -130,13 +130,13 @@ function _initScreenshots(totalWidth, totalHeight) {
     // because Chrome won't generate an image otherwise.
     //
     var badSize = (totalHeight > MAX_PRIMARY_DIMENSION ||
-                   totalWidth > MAX_PRIMARY_DIMENSION ||
-                   totalHeight * totalWidth > MAX_AREA),
+        totalWidth > MAX_PRIMARY_DIMENSION ||
+        totalHeight * totalWidth > MAX_AREA),
         biggerWidth = totalWidth > totalHeight,
         maxWidth = (!badSize ? totalWidth :
-                    (biggerWidth ? MAX_PRIMARY_DIMENSION : MAX_SECONDARY_DIMENSION)),
+            (biggerWidth ? MAX_PRIMARY_DIMENSION : MAX_SECONDARY_DIMENSION)),
         maxHeight = (!badSize ? totalHeight :
-                     (biggerWidth ? MAX_SECONDARY_DIMENSION : MAX_PRIMARY_DIMENSION)),
+            (biggerWidth ? MAX_SECONDARY_DIMENSION : MAX_PRIMARY_DIMENSION)),
         numCols = Math.ceil(totalWidth / maxWidth),
         numRows = Math.ceil(totalHeight / maxHeight),
         row, col, canvas, left, top;
@@ -176,11 +176,11 @@ function _filterScreenshots(imgLeft, imgTop, imgWidth, imgHeight, screenshots) {
     //
     var imgRight = imgLeft + imgWidth,
         imgBottom = imgTop + imgHeight;
-    return screenshots.filter(function(screenshot) {
+    return screenshots.filter(function (screenshot) {
         return (imgLeft < screenshot.right &&
-                imgRight > screenshot.left &&
-                imgTop < screenshot.bottom &&
-                imgBottom > screenshot.top);
+            imgRight > screenshot.left &&
+            imgTop < screenshot.bottom &&
+            imgBottom > screenshot.top);
     });
 }
 
@@ -216,10 +216,10 @@ function openPage(screenshotIndex) {
     }
 
     // create a blob for writing to a file
-    var blob = new Blob([ab], {type: mimeString});
+    var blob = new Blob([ab], { type: mimeString });
 
     // come up with file-system size with a little buffer
-    var size = blob.size + (1024/2);
+    var size = blob.size + (1024 / 2);
 
     // come up with a filename
     var name = contentURL.split('?')[0].split('#')[0];
@@ -235,43 +235,18 @@ function openPage(screenshotIndex) {
         name = '';
     }
     name = ('screencapture' + name +
-            '-' + Date.now() +
-            (screenshots.length > 1 ? '-' + screenshotIndex : '') +
-            '.png');
+        '-' + Date.now() +
+        (screenshots.length > 1 ? '-' + screenshotIndex : '') +
+        '.png');
 
     function onwriteend() {
-        // open the file that now contains the blob - calling
-        // `openPage` again if we had to split up the image
-        var urlName = ('filesystem:chrome-extension://' +
-                       chrome.i18n.getMessage('@@extension_id') +
-                       '/temporary/' + name);
-        var last = screenshotIndex === screenshots.length - 1;
-
-        if (currentTab.incognito && screenshotIndex === 0) {
-            // cannot access file system in incognito, so open in non-incognito
-            // window and add any additional tabs to that window.
-            //
-            // we have to be careful with focused too, because that will close
-            // the popup.
-            chrome.windows.create({
-                url: urlName,
-                incognito: false,
-                focused: last
-            }, function(win) {
-                resultWindowId = win.id;
+        var reader = new window.FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = function () {
+            var base64Data = reader.result;
+            httpHandler('POST', 'http://localhost:3000/api/snippets/', { imageDataUrls: [base64Data] }, function (xhr) {
+                window.open('http://localhost:3000/issues/new/5?snippet=' + xhr.responseText);
             });
-        } else {
-            chrome.tabs.create({
-                url: urlName,
-                active: last,
-                windowId: resultWindowId,
-                openerTabId: currentTab.id,
-                index: (currentTab.incognito ? 0 : currentTab.index) + 1 + screenshotIndex
-            });
-        }
-
-        if (!last) {
-            openPage(screenshotIndex + 1);
         }
     }
 
@@ -281,9 +256,9 @@ function openPage(screenshotIndex) {
 
     // create a blob for writing to a file
     var reqFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    reqFileSystem(window.TEMPORARY, size, function(fs){
-        fs.root.getFile(name, {create: true}, function(fileEntry) {
-            fileEntry.createWriter(function(fileWriter) {
+    reqFileSystem(window.TEMPORARY, size, function (fs) {
+        fs.root.getFile(name, { create: true }, function (fileEntry) {
+            fileEntry.createWriter(function (fileWriter) {
                 fileWriter.onwriteend = onwriteend;
                 fileWriter.write(blob);
             }, errorHandler);
@@ -291,28 +266,73 @@ function openPage(screenshotIndex) {
     }, errorHandler);
 }
 
+function doCapturePage(tab) {
+    var loaded = false;
+    chrome.tabs.executeScript(tab.id, { file: 'page.js' }, function () {
+        loaded = true;
+        show('loading');
+        sendScrollMessage(tab);
+    })
+    window.setTimeout(function () {
+        if (!loaded) {
+            show('uh-oh');
+        }
+    }, 1000);
+}
 
-//
-// start doing stuff immediately! - including error cases
-//
+function checkLogin(tab) {
+    httpHandler('GET', 'http://localhost:3000/api/login/success', '', function () {
+        doCapturePage(tab);
+    }, function () {
+        show('login');
+        hide('loading');
+    });
+}
 
-chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    var tab = tabs[0];
-    currentTab = tab; // used in later calls to get tab info
-    if (testURLMatches(tab.url)) {
-        var loaded = false;
+function loginHandler(tab) {
+    var username = document.getElementById('username').value;
+    var password = document.getElementById('password').value;
+    var param = {
+        username: username,
+        password: password
+    }
+    httpHandler('POST', 'http://localhost:3000/login', param, function () {
+        hide('login');
+        show('loading');
+        doCapturePage(tab);        
+    }, function () {
+        show('login');
+        hide('loading');
+    });
+}
 
-        chrome.tabs.executeScript(tab.id, {file: 'page.js'}, function() {
-            loaded = true;
-            show('loading');
-            sendScrollMessage(tab);
-        });
-
-        window.setTimeout(function() {
-            if (!loaded) {
-                show('uh-oh');
+function httpHandler(method, url, data, callbackSuccess, callbackFail) {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            if (xhr.status == 200) {
+                if (callbackSuccess) callbackSuccess(xhr);
+            } else {
+                if (callbackFail) callbackFail();
             }
-        }, 1000);
+        }
+    };
+    xhr.open(method, url);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+    xhr.withCredentials = true;    
+    xhr.send(data ? JSON.stringify(data) : {});
+}
+
+chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    hide('loading');
+    var tab = tabs[0];
+    if (testURLMatches(tab.url)) {        
+        document.getElementById('login').addEventListener('click', function () {
+            loginHandler(tab);
+        });
+        checkLogin(tab);
     } else {
         show('invalid');
     }

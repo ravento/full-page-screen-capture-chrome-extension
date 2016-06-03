@@ -70,31 +70,33 @@ p { word-wrap: break-word; }
               <div class="clr">
                   <br>
                   <p>
-                      Screen capture in progress, your finished image will open in a
-                      new window once completed. Please wait for the progress bar to
-                      finish.
+                      畫面截圖中請耐心等候，請勿移動滑鼠......
                   </p>
               </div>
           </div>
-          <div id="split-image" class="warning">
-              Note: your page is too large for the Chrome browser to capture as
-              one image. It will be split into <span id="screenshot-count">multiple</span>
-              images.
+          <div id="invalid">
+              此畫面不能透過此功能截圖！
           </div>
-          <div id="invalid" class="error">
-              Full Page Screen Capture cannot be run on this type of URL
-              because of Google Chrome Web Store policies. Try
-              another page on the web.
+          <div id="uh-oh">
+              歐喔！好像發生了一些問題，請聯絡系統管理人員！
           </div>
-          <div id="uh-oh" class="error">
-              Uh oh, something went wrong! Try reloading the page,
-              verifying javascript is enabled,
-              and running this again.
-              <br><br>
-              If the problem persists, please report the error in the
-              <a href="https://chrome.google.com/webstore/support/fdpohaocaechififmbbbbbknoalclacl?hl=en&gl=US#bug">Chrome webstore</a>.
-              Please include the URL you tried it on and the
-              version of Chrome.
+          <div id="login">
+              <fieldset>
+				<legend>請登入 Rakr</legend>
+                <br>
+				<div class="form-group">
+					<label for="username">帳號:</label>
+					<input id="username" autofocus="true" name="username">
+				</div><br>
+				<div class="form-group">
+					<label for="password">密碼:</label>
+					<input id="password" type="password" name="password">
+				</div>
+                <br>
+				<div class="form-group">
+					<button class="btn btn-primary" type="button" id="login" ng-click="login()">登入</button>
+				</div>
+			</fieldset>
           </div>
       </div>
 
