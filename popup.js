@@ -2,10 +2,11 @@
 // Use of this source code is governed by the MIT License found in LICENSE
 
 
+var bugrakerUrl = '';
+
 //
 // Utility methods
 //
-
 function $(id) { return document.getElementById(id); }
 function show(id) { $(id).style.display = 'block'; }
 function hide(id) { $(id).style.display = 'none'; }
@@ -244,8 +245,8 @@ function openPage(screenshotIndex) {
         reader.readAsDataURL(blob);
         reader.onloadend = function () {
             var base64Data = reader.result;
-            httpHandler('POST', 'http://localhost:3000/api/snippets/', { imageDataUrls: [base64Data] }, function (xhr) {
-                window.open('http://localhost:3000/issues/new/5?snippet=' + xhr.responseText);
+            httpHandler('POST', bugrakerUrl + '/api/snippets/', { imageDataUrls: [base64Data] }, function (xhr) {
+                window.open(bugrakerUrl + '/issues/new/5?snippet=' + xhr.responseText);
             });
         }
     }
@@ -281,7 +282,7 @@ function doCapturePage(tab) {
 }
 
 function checkLogin(tab) {
-    httpHandler('GET', 'http://localhost:3000/api/login/success', '', function () {
+    httpHandler('GET', bugrakerUrl + '/api/login/success', '', function () {
         doCapturePage(tab);
     }, function () {
         show('login');
@@ -296,10 +297,10 @@ function loginHandler(tab) {
         username: username,
         password: password
     }
-    httpHandler('POST', 'http://localhost:3000/login', param, function () {
+    httpHandler('POST', bugrakerUrl + '/login', param, function () {
         hide('login');
         show('loading');
-        doCapturePage(tab);        
+        doCapturePage(tab);
     }, function () {
         show('login');
         hide('loading');
@@ -321,19 +322,29 @@ function httpHandler(method, url, data, callbackSuccess, callbackFail) {
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.setRequestHeader("Accept", "application/json");
     xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-    xhr.withCredentials = true;    
+    xhr.withCredentials = true;
     xhr.send(data ? JSON.stringify(data) : {});
 }
 
 chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     hide('loading');
-    var tab = tabs[0];
-    if (testURLMatches(tab.url)) {        
-        document.getElementById('login').addEventListener('click', function () {
-            loginHandler(tab);
-        });
-        checkLogin(tab);
-    } else {
-        show('invalid');
-    }
+    chrome.storage.sync.get({
+        bugrakerUrl: ''
+    }, function (items) {
+        if (!items.bugrakerUrl) {
+            alert("請先至擴充功能選項中設定議題管理系統網址!");
+            return;
+        } else {
+            bugrakerUrl = items.bugrakerUrl;
+            var tab = tabs[0];
+            if (testURLMatches(tab.url)) {
+                document.getElementById('login').addEventListener('click', function () {
+                    loginHandler(tab);
+                });
+                checkLogin(tab);
+            } else {
+                show('invalid');
+            }
+        }
+    });
 });

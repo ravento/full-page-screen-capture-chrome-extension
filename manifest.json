@@ -8,11 +8,12 @@
     "default_popup": "popup.html"
   },
   "permissions": [
-    "tabs","activeTab"    
+    "tabs","activeTab","storage"    
   ],
   "icons": {
     "16": "icon16-999.png",
     "48": "icon48-999.png",
     "128": "icon128-999.png"
-  }
+  },
+  "options_page": "options.html"
 }
